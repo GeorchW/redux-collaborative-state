@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": "src",
+        "outDir": "dist",
+        "target":"ESNext",
+        "lib": ["esnext", "dom"],
+        "module": "esnext",
+        "sourceMap": true,
+        "declaration": true,
+    }
+}
