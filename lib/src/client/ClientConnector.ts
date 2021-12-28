@@ -1,84 +1,118 @@
-import { AnyAction, createAction, Dispatch, PayloadAction } from "@reduxjs/toolkit";
+import { AnyAction, createAction, Dispatch } from "@reduxjs/toolkit";
 import { applyPatch } from "fast-json-patch";
-import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PingMessage, ServerMessage } from "src/Messages";
+import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PingMessage, ServerMessage } from "../Messages";
+import { connect, disconnect, receivePing, receiveState } from "./connectionSlice";
 
-export const receiveStateAction = createAction<any>("receiveState");
-export class ClientConnector<TState> {
-    #state: TState;
-    private constructor(
-        state: TState,
-        public readonly clientId: string,
-        public readonly sessionId: string,
-        public readonly webSocket: WebSocket
-    ) {
-        this.#state = state;
+export default class ClientConnector<TState> {
+    #sessionId: string | undefined;
+    #clientId: string | undefined;
+    #webSocket: WebSocket | undefined;
+
+    #state: TState | undefined;
+
+    get sessionId() { return this.#sessionId }
+    get clientId() { return this.#clientId }
+
+    setConnection(sessionId: string | undefined, clientId: string | undefined, dispatch: Dispatch) {
+        let requiresReconnection = false;
+        if (this.#sessionId !== undefined && this.#sessionId !== sessionId) {
+            requiresReconnection = true;
+        }
+        if (this.#clientId !== undefined && this.#clientId !== clientId) {
+            requiresReconnection = true;
+        }
+        if (this.#webSocket === undefined) {
+            requiresReconnection = true;
+        }
+
+        if (requiresReconnection) {
+            this.connect({ sessionId, clientId }, dispatch);
+        }
     }
 
-    get state() { return this.#state; }
+    //TODO: merge ClientConnector with this class (?)
+    // yeah, I think that makes sense
 
-    public static connect<TState>(
+    connect(
         clientIdentification: ClientIdentificationMessage,
         dispatch: Dispatch
-    ): Promise<ClientConnector<TState>> {
+    ) {
+        this.#webSocket?.close(1000);
+
         // TODO: make more configurable
-        const remoteAddress = location.hostname === "localhost" ?
+        const remoteAddress = window.location.hostname === "localhost" ?
             "ws://localhost:3001/websocket" :
-            `wss://${location.host}/websocket`;
+            `wss://${window.location.host}/websocket`;
 
-        const socket = new WebSocket(remoteAddress);
-        let clientState: ClientConnector<TState> | undefined;
-        return new Promise((resolve, reject) => {
-
-            socket.onmessage = e => {
-                if (typeof e.data !== "string")
-                    throw new Error("Invalid message");
-                const parsed = JSON.parse(e.data);
-                if (clientState === undefined) {
-                    const message = parsed as ClientInitializationMessage<TState>;
-                    clientState = new ClientConnector(
-                        message.initialState,
-                        message.clientId,
-                        message.sessionId,
-                        socket
-                    );
-                    dispatch(receiveStateAction(clientState.state));
-                    resolve(clientState);
+        const connectionStarted = Date.now();
+        let lastPingSent = Date.now();
+        this.#webSocket = new WebSocket(remoteAddress);
+        this.#webSocket.onmessage = e => {
+            if (typeof e.data !== "string")
+                throw new Error("Invalid message");
+            const parsed = JSON.parse(e.data);
+            if (this.#state === undefined) {
+                const { clientId, sessionId, initialState } = parsed as ClientInitializationMessage<TState>;
+                this.#clientId = clientId;
+                this.#sessionId = sessionId;
+                this.#state = initialState;
+                const connectedAt = Date.now();
+                dispatch(connect({
+                    initialState,
+                    clientId,
+                    sessionId,
+                    connectedAt,
+                    initializationTime: connectedAt - connectionStarted
+                }));
+            }
+            else {
+                const data = JSON.parse(e.data) as ServerMessage;
+                if (data.type === "pong") {
+                    //TODO: record the ping response time
+                    const receivedAt = Date.now();
+                    const pingTime = receivedAt - lastPingSent;
+                    dispatch(receivePing({
+                        receivedAt,
+                        pingTime,
+                    }));
+                    return;
                 }
-                else {
-                    const data = JSON.parse(e.data) as ServerMessage;
-                    if (data.type === "pong") {
-                        //TODO: record the ping response time
-                        return;
-                    }
-                    else if (data.type === "patches") {
-                        if (clientState === undefined)
-                            throw new Error("Invalid message: Client is not initialized yet");
+                else if (data.type === "patches") {
+                    if (this.#state === undefined)
+                        throw new Error("Invalid message: Client is not initialized yet");
 
-                        const patchResult = applyPatch(
-                            clientState.state, data.patches, false, false
-                        );
-                        clientState.#state = patchResult.newDocument;
+                    const patchResult = applyPatch(this.#state, data.patches, false, false);
+                    this.#state = patchResult.newDocument;
 
-                        dispatch(receiveStateAction(clientState.state));
-                    }
+                    dispatch(receiveState({
+                        receivedAt: Date.now(),
+                        state: this.#state
+                    }));
                 }
-            };
+            }
+        };
 
-            socket.onopen = () => send(socket, clientIdentification);
+        this.#webSocket.onopen = () => this.#send(clientIdentification);
 
-            //TODO: send pings regularly
-        });
+        // TODO: make ping interval configurable
+        const sendPingsHandle = setInterval(() => {
+            lastPingSent = Date.now();
+            this.#send({ type: "ping" })
+        }, 1000);
+
+        this.#webSocket.onclose = () => {
+            // TODO: try reconnecting depending on configuration?
+            clearInterval(sendPingsHandle);
+            dispatch(disconnect());
+        }
+
+        //TODO: send pings regularly
     }
 
-    send(action: AnyAction) {
-        send(this.webSocket, {
-            type: "action",
-            action,
-        })
+    #send(message: ClientIdentificationMessage | ActionMessage | PingMessage) {
+        this.#webSocket?.send(JSON.stringify(message));
     }
-
-}
-
-function send(webSocket: WebSocket, message: ClientIdentificationMessage | ActionMessage | PingMessage) {
-    webSocket.send(JSON.stringify(message));
+    sendAction(action: AnyAction) {
+        this.#send({ type: "action", action })
+    }
 }

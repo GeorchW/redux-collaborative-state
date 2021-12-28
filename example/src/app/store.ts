@@ -1,12 +1,10 @@
 import { configureStore, ThunkAction, Action, Reducer } from '@reduxjs/toolkit';
-import { ClientConnector, receiveStateAction } from "redux-collaborative-state/dist/client/ClientConnector"
-import { todoSlice } from '../features/todo/todoSlice';
 
-let connector: ClientConnector<any> | undefined;
+import ClientConnector from 'redux-collaborative-state/dist/client/ClientConnector';
+import { connect, disconnect, receiveState, connectionReducer } from 'redux-collaborative-state/dist/client/connectionSlice';
+import { TodoState } from '../features/todo/todoSlice';
 
-export function setConnector(_connector: ClientConnector<any> | undefined) {
-  connector = _connector;
-}
+export const connector = new ClientConnector<{ todo: TodoState }>();
 
 const dummyReducer: Reducer = (state, action) => {
   if (state === undefined) {
@@ -17,10 +15,13 @@ const dummyReducer: Reducer = (state, action) => {
 
   if (action.type.startsWith("todo/")) {
     // TODO: send to server
-    connector?.send(action);
+    connector.sendAction(action);
   }
-  if (action.type === receiveStateAction.type) {
-    return (action as any).payload.todo;
+  if (action.type === connect.type) {
+    return (action as ReturnType<typeof connect>).payload.initialState.todo;
+  }
+  if (action.type === receiveState.type) {
+    return (action as ReturnType<typeof receiveState>).payload.state.todo;
   }
 
   return state;
@@ -29,6 +30,7 @@ const dummyReducer: Reducer = (state, action) => {
 export const store = configureStore({
   reducer: {
     todo: dummyReducer,
+    connection: connectionReducer,
   },
 });
 

@@ -1,8 +1,7 @@
 import React from 'react';
-import { ClientConnector } from 'redux-collaborative-state/dist/client/ClientConnector';
 import './App.css';
 import { useAppDispatch, useAppSelector } from './app/hooks';
-import { setConnector } from './app/store';
+import { connector } from './app/store';
 import { add } from './features/todo/todoSlice';
 
 function App() {
@@ -10,19 +9,8 @@ function App() {
   const dispatch = useAppDispatch();
 
   React.useEffect(() => {
-    const connectorPromise = ClientConnector.connect({
-      clientId: "georch",
-      sessionId: "someSession"
-    }, dispatch);
-
-    connectorPromise.then(setConnector)
-
-    return () => {
-      connectorPromise.then(connector => {
-        connector.webSocket.close(4000, "Component exited")
-        setConnector(undefined);
-      });
-    }
+    connector.setConnection(undefined, undefined, dispatch);
+    return () => { };
   }, [dispatch]);
 
   return (
@@ -30,8 +18,10 @@ function App() {
       App state:
       <br />
       <ObjectDisplay obj={state} />
-      {/* <Counter /> */}
-      <button onClick={() => dispatch(add({ participant: "georch", text: "whatever" }))}>Click me!</button>
+      <button onClick={() => state.connection !== "disconnected" && dispatch(add({
+        participant: state.connection.clientId,
+        text: "whatever"
+      }))}>Click me!</button>
     </div>
   );
 }

@@ -34,7 +34,10 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
 
     getOrCreateSession(sessionId: string | undefined): Session<TInternalState, TVisibleState> {
         if (sessionId === undefined) {
-            const lengthInBytes = Math.ceil(Math.log2(this.#sessions.size) / 8 + 2);
+            // We add 20 bits of entropy to make guessing harder while
+            // keeping a short identifier (usually 4 characters).
+            const minLengthInBits = Math.log2(this.#sessions.size + 1) + 20;
+            const lengthInBytes = Math.ceil(minLengthInBits / 8);
             const sessionId = crypto.randomBytes(lengthInBytes).toString("base64url");
             return this.createSession(sessionId);
         }
