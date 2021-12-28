@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build lib (watch)",
+            "command": "yarn watch",
+            "options": {"cwd": "./lib"},
+            "type": "shell",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Start example client (watch)",
+            "type": "shell",
+            "command": "yarn start",
+            "problemMatcher": [],
+            "options": {"cwd": "./example"}
+        },
+        {
+            "label": "Start example server (watch)",
+            "type": "shell",
+            "command": "yarn start-server",
+            "problemMatcher": [],
+            "options": {"cwd": "./example"}
+        }
+    ]
+}
