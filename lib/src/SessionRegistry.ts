@@ -1,8 +1,8 @@
 import { Reducer } from "@reduxjs/toolkit";
 import ws from "ws";
 import crypto from "crypto";
-import { ClientIdentificationMessage } from "./Messages";
-import Session, { Selector } from "./Session";
+import { ClientIdentificationMessage } from "./Messages.js";
+import Session, { Selector } from "./Session.js";
 
 export default class SessionRegistry<TInternalState, TVisibleState> {
     #sessions = new Map<string, Session<TInternalState, TVisibleState>>();
@@ -17,7 +17,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
         const initialMessage: ClientIdentificationMessage = await new Promise((resolve, reject) => {
             client.onmessage = msg => {
                 if (typeof msg.data !== "string") {
-                    client.close(5000, "unexpected message type");
+                    client.close(4000, "unexpected message type");
                     reject();
                     return;
                 }

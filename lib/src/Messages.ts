@@ -11,6 +11,7 @@ export interface ClientInitializationMessage<TState> {
     sessionId: string,
     clientId: string,
     initialState: TState,
+    // TODO: maybe allow for some kind of greeting
 }
 
 export interface PatchesMessage {

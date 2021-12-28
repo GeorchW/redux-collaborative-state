@@ -2,8 +2,8 @@ import express from "express";
 import http from "http";
 import ws from "ws";
 import { resolve } from "path";
-import SessionRegistry from "./SessionRegistry";
-import ServerOptions from "./ServerOptions";
+import SessionRegistry from "./SessionRegistry.js";
+import ServerOptions from "./ServerOptions.js";
 
 export default function runServer<TInternalState, TVisibleState>(
     options: ServerOptions<TInternalState, TVisibleState>

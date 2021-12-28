@@ -2,14 +2,15 @@
 import { AnyAction, Reducer } from "@reduxjs/toolkit";
 import { compare } from "fast-json-patch";
 import ws from "ws";
-import { Client } from "./Client";
-import { ClientInitializationMessage, ClientMessage } from "./Messages";
+import SessionClient from "./SessionClient.js";
+import { ClientInitializationMessage, ClientMessage } from "./Messages.js";
+import { clientConnected, clientDisconnected } from "./serverActions.js";
 
 export type Selector<TInternalState, TVisibleState> = (state: TInternalState, client: string) => TVisibleState;
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;
-    #clients = new Map<string, Client<TVisibleState>>();
+    #clients = new Map<string, SessionClient<TVisibleState>>();
 
     constructor(
         public readonly sessionId: string,
@@ -22,22 +23,24 @@ export default class Session<TInternalState, TVisibleState> {
     async addClient(webSocket: ws.WebSocket, clientId: string) {
         if (this.#clients.has(clientId)) {
             // TODO: check if client is dead?
-            this.#clients.get(clientId)!.webSocket.close(5000, "other client with same ID connected");
+            this.#clients.get(clientId)!.webSocket.close(4000, "other client with same ID connected");
         }
+        this.dispatch(clientConnected(clientId));
 
         const initialState = this.selector(this.#state, clientId);
 
-        webSocket.send({
+        webSocket.send(JSON.stringify({
             clientId,
             sessionId: this.sessionId,
             initialState
-        } as ClientInitializationMessage<TVisibleState>);
+        } as ClientInitializationMessage<TVisibleState>));
+
 
         webSocket.onmessage = message => {
             client.lastMessageTime = Date.now();
 
             if (typeof message.data !== "string") {
-                webSocket.close(5000, "invalid message type");
+                webSocket.close(4000, "invalid message type");
                 return;
             }
             const data = JSON.parse(message.data) as ClientMessage;
@@ -47,15 +50,16 @@ export default class Session<TInternalState, TVisibleState> {
                 this.dispatch(data.action);
             }
             else if (data.type === "ping") {
-                webSocket.send({ type: "pong" });
+                webSocket.send(JSON.stringify({ type: "pong" }));
             }
         };
         webSocket.onclose = message => {
             console.log(`Client ${clientId} disconnected: ${message.code} ${message.reason}`);
             this.#clients.delete(clientId);
+            this.dispatch(clientDisconnected(clientId));
         }
 
-        const client = new Client(clientId, webSocket, initialState);
+        const client = new SessionClient(clientId, webSocket, initialState);
         this.#clients.set(clientId, client);
     }
 
@@ -70,17 +74,17 @@ export default class Session<TInternalState, TVisibleState> {
             const newVisibleState = this.selector(newState, clientId);
             const patches = compare(oldVisibleState, newVisibleState);
             if (patches.length === 0) continue;
-            client.webSocket.send({
+            client.webSocket.send(JSON.stringify({
                 type: "patches",
                 patches
-            });
+            }));
             client.lastVisibleState = newVisibleState;
         }
     }
 
     close() {
         for (const [, client] of this.#clients) {
-            client.webSocket.close(5000, "Terminating session");
+            client.webSocket.close(4000, "Terminating session");
         }
     }
 }

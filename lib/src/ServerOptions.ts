@@ -25,9 +25,9 @@ export default interface ServerOptions<TInternalState, TVisibleState> {
      * Allows specifying additional configuration for the Express server, e.g.
      * adding custom routes.
      */
-    configureServer: (app: Express) => void;
+    configureServer?: (app: Express) => void;
     /**
      * The path that the websockt server should listen on. Defaults to "/websocket".
      */
-    websocketPath: string;
+    websocketPath?: string;
 }
