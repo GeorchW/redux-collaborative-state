@@ -1,0 +1,35 @@
+.chat {
+  max-width: 500px;
+  display: inline-grid;
+  grid-template-rows: 1fr auto;
+  height: 500px;
+}
+
+.messages {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  place-content: start;
+  overflow-y: scroll;
+}
+
+.message {
+  display: contents;
+}
+
+.author::after {
+  content: ": ";
+  padding-right: 1em;
+}
+
+.author {
+  color: gray;
+}
+
+.messageText {
+  text-align: left;
+}
+.timestamp {
+  text-align: right;
+  color: gray;
+  font-size: 0.7em;
+}

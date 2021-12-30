@@ -1,4 +1,4 @@
-import { AnyAction, createAction, createAsyncThunk, Dispatch, ThunkAction } from "@reduxjs/toolkit";
+import { AnyAction, Dispatch, Middleware } from "@reduxjs/toolkit";
 import { applyPatch } from "fast-json-patch";
 import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PatchesMessage, PingMessage, PongMessage, ServerMessage } from "../Messages";
 import { attemptConnection, connect, disconnect, receivePing, receiveState } from "./connectionSlice";
@@ -92,6 +92,23 @@ export default class ClientConnector<TState> {
             _send(this.#state.webSocket, { type: "action", action });
         else console.error("Not connected - can't send any actions");
     }
+
+    public getMiddleware(...syncedSlices: string[]): Middleware {
+        return api => next => action => {
+
+            if (typeof action.type !== "string") return next(action);
+
+            const actionSlice = action.type.split("/")[0];
+
+            if (syncedSlices.includes(actionSlice)) {
+                this.sendAction(action);
+            }
+            else {
+                next(action);
+            }
+        }
+    }
+
     private async setState(nextState: ConnectionActualState | Promise<ConnectionActualState>) {
         const oldState = this.#state;
         const newState = await nextState;

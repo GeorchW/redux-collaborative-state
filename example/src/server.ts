@@ -1,10 +1,11 @@
 import { combineReducers } from "@reduxjs/toolkit";
-import { todoReducer, TodoState } from "./features/todo/todoSlice";
+import { todoReducer } from "./features/todo/todoSlice";
 import { runServer } from "redux-collaborative-state";
+import { chatReducer } from "./features/chat/chatSlice";
 
-runServer<{ todo: TodoState }, { todo: TodoState }>({
-    reducer: combineReducers({
-        todo: todoReducer
-    }),
-    selector: x => x,
+const reducer = combineReducers({
+    todo: todoReducer,
+    chat: chatReducer,
 });
+
+runServer({ reducer, selector: x => x });

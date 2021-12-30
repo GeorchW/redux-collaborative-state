@@ -6,11 +6,14 @@ import { connect, ConnectActionPayload } from 'redux-collaborative-state/dist/cl
 import './App.css';
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import { connector } from './app/store';
+import { Chat } from './features/chat/Chat';
 import { add } from './features/todo/todoSlice';
 
 function App() {
   const state = useAppSelector(state => state);
   const dispatch = useAppDispatch();
+
+  const [displayState, setDisplayState] = React.useState(false);
 
   return (
     <div className="App">
@@ -22,15 +25,40 @@ function App() {
         </Routes>
       </BrowserRouter>
 
-      App state:
+      <Chat />
       <br />
-      <ObjectDisplay obj={state} />
-      <button onClick={() => state.connection.type === "active" && dispatch(add({
-        participant: state.connection.clientId,
-        text: "whatever"
-      }))}>Click me !</button>
+
+      <input type="checkbox" checked={displayState} onChange={e => setDisplayState(e.currentTarget.checked)} />
+      Display App state
+      {displayState && <>
+        <br />
+        <ObjectDisplay obj={state} />
+        <AddItemComponent />
+      </>}
+
     </div>
   );
+}
+
+function AddItemComponent() {
+  const clientId = useAppSelector(state => state.connection.type === "active" && state.connection.clientId);
+  const dispatch = useAppDispatch();
+  const submit = () => {
+    if (!clientId) return;
+    dispatch(add({
+      participant: clientId,
+      text
+    }));
+    setText("");
+  };
+
+  const [text, setText] = React.useState("");
+
+  return <div>
+    <input type="text" value={text} onChange={e => setText(e.target.value)}
+      onKeyPress={e => e.key === "Enter" && submit()} />
+    <button onClick={submit}>Add</button>
+  </div>
 }
 
 function NewConnection() {
@@ -81,13 +109,20 @@ function NoConnection() {
 
 function ObjectDisplay(props: { obj: any }) {
   const { obj } = props;
-  if (typeof obj === "object") {
+  if (obj === null) {
+    return <div className="literal">null</div>
+  }
+  else if (obj === undefined) {
+    return <div className="literal">undefined</div>
+  }
+  else if (typeof obj === "object") {
     return <div className="object" >{Object.entries(obj).map(([k, v]) => <div key={k}>
       <div className="key">{k}</div>
       <ObjectDisplay obj={v} />
     </div>)}</div>
   }
-  return <div className="literal">{`${obj}`}</div>
+  else
+    return <div className="literal">{`${obj}`}</div>
 }
 
 export default App;

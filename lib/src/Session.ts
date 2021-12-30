@@ -22,12 +22,11 @@ export default class Session<TInternalState, TVisibleState> {
     }
 
     disconnectIdleClients() {
-        console.log("checking...");
         const minReactionTimestamp = Date.now() - (this.options.clientTimeout ?? 5_000);
         for (const [clientId, client] of this.#clients) {
             if (client.lastMessageTime < minReactionTimestamp) {
                 console.log(`Disconnecting client ${clientId} since he does not seem to react.`)
-                client.webSocket.close(5000, "Client does not react");
+                client.webSocket.close(4000, "Client does not react");
             }
         }
     }
