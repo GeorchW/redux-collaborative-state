@@ -192,6 +192,7 @@ export default class ClientConnector<TState> {
         // to the server. We can check if the exit was clean and decide not to
         // try reconnecting on cleanly exited connections.
         if (e.wasClean) {
+            this.dispatchNext(disconnect());
             return { type: "disconnected" }
         }
         if (this.#state.type === "connected" || this.#state.type === "socketOpen") {
