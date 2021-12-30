@@ -186,6 +186,14 @@ export default class ClientConnector<TState> {
         return { ...state }
     }
     private async onclose(e: CloseEvent): Promise<ConnectionActualState> {
+        // In Firefox, refreshing a page with an open WebSocket connection will
+        // cause the close event handlers to be handled. Our code here will try
+        // to reconnect in this case, causing two connections in rapid succession
+        // to the server. We can check if the exit was clean and decide not to
+        // try reconnecting on cleanly exited connections.
+        if (e.wasClean) {
+            return { type: "disconnected" }
+        }
         if (this.#state.type === "connected" || this.#state.type === "socketOpen") {
             this.dispatchNext(attemptConnection({
                 sessionId: this.#state.sessionId,
