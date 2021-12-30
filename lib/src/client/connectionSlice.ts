@@ -1,8 +1,20 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export type ConnectionState = "disconnected" | ActiveSessionState;
+export type ConnectionState = DisconnectedState | AttemptingConnectionState | ActiveSessionState;
+
+export interface DisconnectedState {
+    type: "disconnected";
+}
+
+export interface AttemptingConnectionState {
+    type: "attemptingConnection";
+    sessionId?: string;
+    clientId?: string;
+    attempts: number;
+}
 
 export interface ActiveSessionState {
+    type: "active"
     sessionId: string,
     clientId: string,
     lastMessageTime: number,
@@ -29,11 +41,18 @@ export interface ReceivePingPayload {
 
 export const connectionSlice = createSlice({
     name: "connection",
-    initialState: "disconnected" as ConnectionState,
+    initialState: { type: "disconnected" } as ConnectionState,
     reducers: {
+        attemptConnection(state, action: PayloadAction<{ sessionId?: string, clientId?: string, attempts: number }>) {
+            return {
+                type: "attemptingConnection",
+                ...action.payload,
+            }
+        },
         connect(state, action: PayloadAction<ConnectActionPayload>) {
             const { initializationTime, initialState, sessionId, clientId, connectedAt } = action.payload;
             return {
+                type: "active",
                 sessionId,
                 clientId,
                 lastMessageTime: connectedAt,
@@ -42,24 +61,24 @@ export const connectionSlice = createSlice({
             };
         },
         receiveState(state, action: PayloadAction<ReceiveStatePayload>) {
-            if (state === "disconnected")
+            if (state.type !== "active")
                 throw new Error("Received a ping without being connected!");
 
             state.lastMessageTime = action.payload.receivedAt;
         },
         receivePing(state, action: PayloadAction<ReceivePingPayload>) {
-            if (state === "disconnected")
+            if (state.type !== "active")
                 throw new Error("Received a ping without being connected!");
 
             state.ping = action.payload.pingTime;
             state.lastMessageTime = action.payload.receivedAt;
         },
         disconnect() {
-            return "disconnected";
+            return { type: "disconnected" };
         },
     }
 });
 
 export const connectionReducer = connectionSlice.reducer;
 
-export const { connect, disconnect, receiveState, receivePing } = connectionSlice.actions;
+export const { attemptConnection, connect, disconnect, receiveState, receivePing } = connectionSlice.actions;
