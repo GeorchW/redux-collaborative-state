@@ -9,7 +9,7 @@ export default function runServer<TInternalState, TVisibleState>(
     options: ServerOptions<TInternalState, TVisibleState>
 ) {
     const app = express();
-    const registry = new SessionRegistry(options.reducer, options.selector);
+    const registry = new SessionRegistry(options);
 
     if (process.env.NODE_ENV === "development") {
         // Configure CORS for local development

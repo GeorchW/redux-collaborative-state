@@ -3,15 +3,7 @@ import { Express } from "express";
 import { Selector } from "./Session";
 
 
-export default interface ServerOptions<TInternalState, TVisibleState> {
-    /**
-     * The reducer that should be used to handle actions on the server.
-     */
-    reducer: Reducer<TInternalState>;
-    /**
-     * The function that translates the internal server state to the state presented to each client.
-     */
-    selector: Selector<TInternalState, TVisibleState>;
+export default interface ServerOptions<TInternalState, TVisibleState> extends SessionOptions<TInternalState, TVisibleState> {
     /**
      * The port on which the server should listen on. Defaults to 3001.
      */
@@ -30,4 +22,30 @@ export default interface ServerOptions<TInternalState, TVisibleState> {
      * The path that the websockt server should listen on. Defaults to "/websocket".
      */
     websocketPath?: string;
+}
+
+export interface SessionOptions<TInternalState, TVisibleState> {
+    /**
+     * The reducer that should be used to handle actions on the server.
+     */
+    reducer: Reducer<TInternalState>;
+    /**
+     * The function that translates the internal server state to the state presented to each client.
+     */
+    selector: Selector<TInternalState, TVisibleState>;
+    /**
+     * The minimum time after which sessions without participants are terminated, in milliseconds.
+     * Defaults to 60000 (one minute).
+     */
+    sessionTimeout?: number;
+    /**
+     * The minimum time after which a client that does not send pings can be disconnected.
+     * Defaults to 5000 (five seconds).
+     */
+    clientTimeout?: number;
+    /**
+     * The regularity for which each session checks for timeouts.
+     * Defaults to 2000 (two seconds).
+     */
+    watchdogFrequency?: number;
 }

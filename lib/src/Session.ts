@@ -5,19 +5,31 @@ import ws from "ws";
 import SessionClient from "./SessionClient.js";
 import { ClientInitializationMessage, ClientMessage } from "./Messages.js";
 import { clientConnected, clientDisconnected } from "./serverActions.js";
+import { SessionOptions } from "./ServerOptions.js";
 
 export type Selector<TInternalState, TVisibleState> = (state: TInternalState, client: string) => TVisibleState;
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;
     #clients = new Map<string, SessionClient<TVisibleState>>();
+    lastMessageTime = Date.now();
 
     constructor(
         public readonly sessionId: string,
-        public readonly reducer: Reducer<TInternalState>,
-        public readonly selector: Selector<TInternalState, TVisibleState>
+        public readonly options: SessionOptions<TInternalState, TVisibleState>,
     ) {
-        this.#state = reducer(undefined, { type: "@@SERVER_INIT" });
+        this.#state = options.reducer(undefined, { type: "@@SERVER_INIT" });
+    }
+
+    disconnectIdleClients() {
+        console.log("checking...");
+        const minReactionTimestamp = Date.now() - (this.options.clientTimeout ?? 5_000);
+        for (const [clientId, client] of this.#clients) {
+            if (client.lastMessageTime < minReactionTimestamp) {
+                console.log(`Disconnecting client ${clientId} since he does not seem to react.`)
+                client.webSocket.close(5000, "Client does not react");
+            }
+        }
     }
 
     async addClient(webSocket: ws.WebSocket, clientId: string) {
@@ -27,7 +39,7 @@ export default class Session<TInternalState, TVisibleState> {
         }
         this.dispatch(clientConnected(clientId));
 
-        const initialState = this.selector(this.#state, clientId);
+        const initialState = this.options.selector(this.#state, clientId);
 
         webSocket.send(JSON.stringify({
             clientId,
@@ -37,7 +49,7 @@ export default class Session<TInternalState, TVisibleState> {
 
 
         webSocket.onmessage = message => {
-            client.lastMessageTime = Date.now();
+            this.lastMessageTime = client.lastMessageTime = Date.now();
 
             if (typeof message.data !== "string") {
                 webSocket.close(4000, "invalid message type");
@@ -65,13 +77,13 @@ export default class Session<TInternalState, TVisibleState> {
 
     dispatch(action: AnyAction) {
         const oldState = this.#state;
-        const newState = this.reducer(this.#state, action);
+        const newState = this.options.reducer(this.#state, action);
         if (oldState === newState) return;
 
         this.#state = newState;
         for (const [clientId, client] of this.#clients) {
             const oldVisibleState = client.lastVisibleState;
-            const newVisibleState = this.selector(newState, clientId);
+            const newVisibleState = this.options.selector(newState, clientId);
             const patches = compare(oldVisibleState, newVisibleState);
             if (patches.length === 0) continue;
             client.webSocket.send(JSON.stringify({
