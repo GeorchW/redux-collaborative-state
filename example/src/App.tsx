@@ -1,4 +1,8 @@
+import { Dispatch } from '@reduxjs/toolkit';
 import React from 'react';
+import { Route, Routes, useNavigate, useParams } from 'react-router';
+import { BrowserRouter } from 'react-router-dom';
+import { connect, ConnectActionPayload } from 'redux-collaborative-state/dist/client/connectionSlice';
 import './App.css';
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import { connector } from './app/store';
@@ -8,22 +12,65 @@ function App() {
   const state = useAppSelector(state => state);
   const dispatch = useAppDispatch();
 
-  React.useEffect(() => {
-    connector.setConnection(undefined, undefined, dispatch);
-    return () => { };
-  }, [dispatch]);
+  React.useEffect(() => { connector.dispatch = dispatch }, [dispatch]);
 
   return (
     <div className="App">
+      <BrowserRouter>
+        <Routes>
+          <Route path="/session/:sessionId" element={<RoutedConnection />} />
+          <Route path="/session/~new" element={<NewConnection />} />
+          <Route path="/" element={<NoConnection />} />
+        </Routes>
+      </BrowserRouter>
+
       App state:
       <br />
       <ObjectDisplay obj={state} />
-      <button onClick={() => state.connection !== "disconnected" && dispatch(add({
+      <button onClick={() => state.connection.type === "active" && dispatch(add({
         participant: state.connection.clientId,
         text: "whatever"
-      }))}>Click me!</button>
+      }))}>Click me !</button>
     </div>
   );
+}
+
+function NewConnection() {
+  const originalDispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const dispatch: Dispatch = React.useCallback(action => {
+    console.log(action.type);
+    if (action.type === connect.type) {
+      const { sessionId } = action.payload as ConnectActionPayload;
+      navigate(`/session/${sessionId}`);
+    }
+    return originalDispatch(action);
+  }, [originalDispatch, navigate]);
+
+  React.useEffect(() => {
+    connector.dispatch = dispatch;
+    connector.setTargetState({});
+    return () => {
+      connector.dispatch = originalDispatch;
+    };
+  }, [dispatch, originalDispatch]);
+
+  return <></>
+}
+
+function RoutedConnection() {
+  const { sessionId, clientId } = useParams();
+
+  React.useEffect(() => connector.setTargetState({ sessionId, clientId }),
+    [clientId, sessionId]);
+
+  return <></>
+}
+
+function NoConnection() {
+  React.useEffect(() => connector.setTargetState("disconnected"), []);
+
+  return <></>
 }
 
 function ObjectDisplay(props: { obj: any }) {
