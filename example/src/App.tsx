@@ -12,8 +12,6 @@ function App() {
   const state = useAppSelector(state => state);
   const dispatch = useAppDispatch();
 
-  React.useEffect(() => { connector.dispatch = dispatch }, [dispatch]);
-
   return (
     <div className="App">
       <BrowserRouter>
@@ -39,7 +37,6 @@ function NewConnection() {
   const originalDispatch = useAppDispatch();
   const navigate = useNavigate();
   const dispatch: Dispatch = React.useCallback(action => {
-    console.log(action.type);
     if (action.type === connect.type) {
       const { sessionId } = action.payload as ConnectActionPayload;
       navigate(`/session/${sessionId}`);
@@ -60,15 +57,24 @@ function NewConnection() {
 
 function RoutedConnection() {
   const { sessionId, clientId } = useParams();
+  const dispatch = useAppDispatch();
 
-  React.useEffect(() => connector.setTargetState({ sessionId, clientId }),
-    [clientId, sessionId]);
+  React.useEffect(() => {
+    connector.dispatch = dispatch;
+    connector.setTargetState({ sessionId, clientId })
+  },
+    [clientId, sessionId, dispatch]);
 
   return <></>
 }
 
 function NoConnection() {
-  React.useEffect(() => connector.setTargetState("disconnected"), []);
+  const dispatch = useAppDispatch();
+
+  React.useEffect(() => {
+    connector.setTargetState("disconnected");
+    connector.dispatch = dispatch;
+  }, [dispatch]);
 
   return <></>
 }
