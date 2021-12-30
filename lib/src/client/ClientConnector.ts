@@ -148,21 +148,20 @@ export default class ClientConnector<TState> {
             initializationTime: connectedAt - state.connectionStarted
         }));
 
-        let lastPingSent = Date.now();
         const pingIntervalHandle = setInterval(() => {
             if (this.#state.type !== "connected") {
                 clearInterval(pingIntervalHandle);
                 return;
             }
-            this.setState({ ...this.#state, lastPingSent })
             _send(this.#state.webSocket, { type: "ping" })
+            this.setState({ ...this.#state, lastPingSent: Date.now() })
         }, 1000);
         return {
             type: "connected",
             sessionId, clientId, pingIntervalHandle,
             sharedState: initialState,
             webSocket: state.webSocket,
-            lastPingSent
+            lastPingSent: Date.now()
         }
     }
     private handlePatchesMessage(state: ConnectedState, msg: PatchesMessage): ConnectedState {
