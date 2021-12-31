@@ -1,6 +1,6 @@
 {
   "name": "redux-collaborative-state",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "This is a library for creating collaborative web applications using Redux.",
   "author": "Georg Wicke-Arndt",
   "license": "MIT",
