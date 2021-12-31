@@ -11,7 +11,6 @@ import { add } from './features/todo/todoSlice';
 
 function App() {
   const state = useAppSelector(state => state);
-  const dispatch = useAppDispatch();
 
   const [displayState, setDisplayState] = React.useState(false);
 
