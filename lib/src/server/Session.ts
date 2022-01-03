@@ -3,7 +3,7 @@ import { AnyAction, Reducer } from "@reduxjs/toolkit";
 import { compare } from "fast-json-patch";
 import ws from "ws";
 import SessionClient from "./SessionClient.js";
-import { ClientInitializationMessage, ClientMessage } from "./Messages.js";
+import { ClientInitializationMessage, ClientMessage } from "../Messages.js";
 import { clientConnected, clientDisconnected } from "./serverActions.js";
 import { SessionOptions } from "./ServerOptions.js";
 
