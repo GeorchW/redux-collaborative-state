@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { clientConnected, clientDisconnected } from "redux-collaborative-state/dist/serverActions";
+import { clientConnected, clientDisconnected } from "redux-collaborative-state/dist/server/serverActions";
 
 export interface ChatState {
     messages: Message[],

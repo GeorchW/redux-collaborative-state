@@ -73,7 +73,7 @@ function NewConnection() {
 
   React.useEffect(() => {
     connector.dispatch = dispatch;
-    connector.setTargetState({});
+    connector.connect();
     return () => {
       connector.dispatch = originalDispatch;
     };
@@ -88,7 +88,7 @@ function RoutedConnection() {
 
   React.useEffect(() => {
     connector.dispatch = dispatch;
-    connector.setTargetState({ sessionId, clientId })
+    connector.connect(sessionId, clientId)
   },
     [clientId, sessionId, dispatch]);
 
@@ -99,7 +99,7 @@ function NoConnection() {
   const dispatch = useAppDispatch();
 
   React.useEffect(() => {
-    connector.setTargetState("disconnected");
+    connector.disconnect();
     connector.dispatch = dispatch;
   }, [dispatch]);
 

@@ -3,11 +3,9 @@ import { AnyAction, Reducer } from "@reduxjs/toolkit";
 import { compare } from "fast-json-patch";
 import ws from "ws";
 import SessionClient from "./SessionClient.js";
-import { ClientInitializationMessage, ClientMessage } from "../Messages.js";
-import { clientConnected, clientDisconnected } from "./serverActions.js";
-import { SessionOptions } from "./ServerOptions.js";
-
-export type Selector<TInternalState, TVisibleState> = (state: TInternalState, client: string) => TVisibleState;
+import { ClientInitializationMessage, ClientMessage } from "../../Messages.js";
+import { clientConnected, clientDisconnected } from "../serverActions.js";
+import { SessionOptions } from "../ServerOptions.js";
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;

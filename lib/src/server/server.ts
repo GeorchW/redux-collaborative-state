@@ -2,9 +2,10 @@ import express from "express";
 import http from "http";
 import ws from "ws";
 import { resolve } from "path";
-import SessionRegistry from "./SessionRegistry.js";
+import SessionRegistry from "./internal/SessionRegistry.js";
 import ServerOptions from "./ServerOptions.js";
 
+/** Starts a new collaborative state server. */
 export default function runServer<TInternalState, TVisibleState>(
     options: ServerOptions<TInternalState, TVisibleState>
 ) {

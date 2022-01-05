@@ -1,9 +1,9 @@
 import { Reducer } from "@reduxjs/toolkit";
 import ws from "ws";
 import crypto from "crypto";
-import { ClientIdentificationMessage } from "../Messages.js";
-import Session, { Selector } from "./Session.js";
-import { SessionOptions } from "./ServerOptions.js";
+import { ClientIdentificationMessage } from "../../Messages.js";
+import Session from "./Session.js";
+import { SessionOptions } from "../ServerOptions.js";
 
 export default class SessionRegistry<TInternalState, TVisibleState> {
     #sessions = new Map<string, Session<TInternalState, TVisibleState>>();

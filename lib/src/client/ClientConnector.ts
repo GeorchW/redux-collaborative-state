@@ -3,8 +3,6 @@ import { applyPatch } from "fast-json-patch";
 import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PatchesMessage, PingMessage, PongMessage, ServerMessage } from "../Messages";
 import { attemptConnection, connect, disconnect, receivePing, receiveState } from "./connectionSlice";
 
-export type ConnectionTargetState = "disconnected" | { sessionId?: string, clientId?: string };
-
 type ConnectionActualState = DisconnectedState | ConnectingState | SocketOpenState | ConnectedState;
 
 interface DisconnectedState { type: "disconnected" }
@@ -33,16 +31,31 @@ interface ConnectedState {
     lastPingSent: number,
 }
 
-
+/**
+ * Manages the connection to a server.
+ */
 export default class ClientConnector<TState> {
+    /** The URL of the server to connect to. */
     public readonly url: string;
+
+    /**
+     * Creates a new instance of the ClientConnector class.
+     * 
+     * @param url The URL to connect to. Defaults to `localhost:3001/websocket` 
+     *    if the hostname is `localhost`, or `<current host>/websocket` in all 
+     *    other cases.
+     */
     constructor(url?: string) {
         this.url = url ?? (window.location.hostname === "localhost" ?
             "ws://localhost:3001/websocket" :
             `wss://${window.location.host}/websocket`);
     }
     #state: ConnectionActualState = { type: "disconnected" };
-    dispatch: Dispatch = x => x;
+    /** 
+     * The method used to dispatch any actions. 
+     * Set this to your store's dispatch method to receive updates.
+     **/
+    public dispatch: Dispatch = x => x;
 
     //We will dispatch any actions after the state change has finished to ensure that we don't get weird cascades.
     #toBeDispatched: AnyAction[] = [];
@@ -50,17 +63,23 @@ export default class ClientConnector<TState> {
         this.#toBeDispatched.push(action)
     }
 
-    public setTargetState(targetState: ConnectionTargetState) {
-        if (targetState === "disconnected") {
-            if (this.#state.type !== "disconnected") {
-                this.dispatchNext(disconnect());
-                this.setState({ type: "disconnected" });
-            }
-            return;
-        }
-
-        const { sessionId, clientId } = targetState;
-
+    /** Disconnects the client without attempting to reconnect. */
+    public disconnect() {
+        if (this.#state.type === "disconnected") return;
+        this.dispatchNext(disconnect());
+        this.setState({ type: "disconnected" });
+    }
+    /**
+     * Instructs the client to attempt a connection to the server.
+     * The client will attempt to reconnect automatically if the connection 
+     * is interrupted or can't be established.
+     * 
+     * @param sessionId The ID of the session that the client should connect to.
+     *  An empty session ID creates a new session.
+     * @param clientId The ID of this client. An undefined ID will cause the
+     *  server to assign a new ID to the client.
+     */
+    public connect(sessionId?: string, clientId?: string) {
         let requiresReconnection = false;
         if (this.#state.type === "disconnected") {
             requiresReconnection = true;
@@ -76,23 +95,31 @@ export default class ClientConnector<TState> {
 
         if (requiresReconnection) {
             console.log("Reconnecting!", sessionId, clientId, this.#state);
-            this.dispatchNext(attemptConnection({ ...targetState, attempts: 0 }));
+            this.dispatchNext(attemptConnection({ sessionId, clientId, attempts: 0 }));
             this.setState({
                 type: "connecting",
                 attempts: 0,
                 connectionStarted: Date.now(),
                 webSocket: new WebSocket(this.url),
-                ...targetState
+                sessionId, clientId
             });
         }
     }
 
+    /** Sends a Redux action to the server. */
     public sendAction(action: AnyAction) {
         if (this.#state.type === "connected")
             _send(this.#state.webSocket, { type: "action", action });
         else console.error("Not connected - can't send any actions");
     }
 
+    /** 
+     * Returns a middleware which reroutes actions of given slices to the 
+     * server instead of applying them locally.
+     * 
+     * @param syncedSlices The slices whose actions should be routed to the 
+     *  server.
+     **/
     public getMiddleware(...syncedSlices: string[]): Middleware {
         return api => next => action => {
 

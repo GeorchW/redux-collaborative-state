@@ -1,7 +1,7 @@
 import { Reducer } from "@reduxjs/toolkit";
 import { Express } from "express";
-import { Selector } from "./Session";
 
+export type Selector<TInternalState, TVisibleState> = (state: TInternalState, client: string) => TVisibleState;
 
 export default interface ServerOptions<TInternalState, TVisibleState> extends SessionOptions<TInternalState, TVisibleState> {
     /**
