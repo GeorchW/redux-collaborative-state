@@ -1,7 +1,7 @@
 import { Dispatch } from '@reduxjs/toolkit';
 import React from 'react';
 import { Route, Routes, useNavigate, useParams } from 'react-router';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Link } from 'react-router-dom';
 import { connect, ConnectActionPayload } from 'redux-collaborative-state/dist/client/connectionSlice';
 import './App.css';
 import { useAppDispatch, useAppSelector } from './app/hooks';
@@ -24,7 +24,6 @@ function App() {
         </Routes>
       </BrowserRouter>
 
-      <Chat />
       <br />
 
       <input type="checkbox" checked={displayState} onChange={e => setDisplayState(e.currentTarget.checked)} />
@@ -92,7 +91,9 @@ function RoutedConnection() {
   },
     [clientId, sessionId, dispatch]);
 
-  return <></>
+  return <>
+    <Chat />
+  </>
 }
 
 function NoConnection() {
@@ -103,7 +104,9 @@ function NoConnection() {
     connector.dispatch = dispatch;
   }, [dispatch]);
 
-  return <></>
+  return <>
+    <Link to="/session/~new">Create new session</Link>
+  </>
 }
 
 function ObjectDisplay(props: { obj: any }) {
