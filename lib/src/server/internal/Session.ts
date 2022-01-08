@@ -6,7 +6,7 @@ import SessionClient from "./SessionClient.js";
 import { ClientInitializationMessage, ClientMessage } from "../../Messages.js";
 import { clientConnected, clientDisconnected } from "../serverActions.js";
 import { SessionOptions } from "../ServerOptions.js";
-import ApplicationCloseCodes from "src/ApplicationCloseCodes.js";
+import ApplicationCloseCodes from "../../ApplicationCloseCodes.js";
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;

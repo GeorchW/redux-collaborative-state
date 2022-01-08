@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { ClientIdentificationMessage } from "../../Messages.js";
 import Session from "./Session.js";
 import { SessionOptions } from "../ServerOptions.js";
-import ApplicationCloseCodes from "src/ApplicationCloseCodes.js";
+import ApplicationCloseCodes from "../../ApplicationCloseCodes.js";
 
 export default class SessionRegistry<TInternalState, TVisibleState> {
     #sessions = new Map<string, Session<TInternalState, TVisibleState>>();
