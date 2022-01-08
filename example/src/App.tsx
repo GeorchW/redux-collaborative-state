@@ -1,5 +1,5 @@
 import { Dispatch } from '@reduxjs/toolkit';
-import React from 'react';
+import React, { memo } from 'react';
 import { Route, Routes, useNavigate, useParams } from 'react-router';
 import { BrowserRouter, Link } from 'react-router-dom';
 import { connect, ConnectActionPayload } from 'redux-collaborative-state/dist/client/connectionSlice';
@@ -10,7 +10,6 @@ import { Chat } from './features/chat/Chat';
 import { add } from './features/todo/todoSlice';
 
 function App() {
-  const state = useAppSelector(state => state);
 
   const [displayState, setDisplayState] = React.useState(false);
 
@@ -30,12 +29,17 @@ function App() {
       Display App state
       {displayState && <>
         <br />
-        <ObjectDisplay obj={state} />
+        <StateDisplay />
         <AddItemComponent />
       </>}
 
     </div>
   );
+}
+
+function StateDisplay() {
+  const state = useAppSelector(state => state);
+  return <ValueDisplay value={state} />
 }
 
 function AddItemComponent() {
@@ -109,8 +113,8 @@ function NoConnection() {
   </>
 }
 
-function ObjectDisplay(props: { obj: any }) {
-  const { obj } = props;
+function ValueDisplay(props: { value: any }) {
+  const { value: obj } = props;
   if (obj === null) {
     return <div className="literal">null</div>
   }
@@ -118,13 +122,19 @@ function ObjectDisplay(props: { obj: any }) {
     return <div className="literal">undefined</div>
   }
   else if (typeof obj === "object") {
-    return <div className="object" >{Object.entries(obj).map(([k, v]) => <div key={k}>
-      <div className="key">{k}</div>
-      <ObjectDisplay obj={v} />
-    </div>)}</div>
+    return <MemoizedObjectDisplay obj={obj} />
   }
   else
     return <div className="literal">{`${obj}`}</div>
+}
+
+const MemoizedObjectDisplay = memo(ObjectDisplay);
+
+function ObjectDisplay(props: { obj: object }) {
+  return <div className="object" >{Object.entries(props.obj).map(([k, v]) => <div key={k}>
+    <div className="key">{k}</div>
+    <ValueDisplay value={v} />
+  </div>)}</div>
 }
 
 export default App;
