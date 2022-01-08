@@ -1,5 +1,6 @@
 import { AnyAction, Dispatch, Middleware } from "@reduxjs/toolkit";
 import { applyPatch } from "fast-json-patch";
+import produce from "immer"
 import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PatchesMessage, PingMessage, PongMessage, ServerMessage } from "../Messages";
 import { attemptConnection, connect, disconnect, receivePing, receiveState } from "./connectionSlice";
 
@@ -209,7 +210,13 @@ export default class ClientConnector<TState> {
         }
     }
     private handlePatchesMessage(state: ConnectedState, msg: PatchesMessage): ConnectedState {
-        const { newDocument } = applyPatch(state.sharedState, msg.patches, false, false);
+        // fast-json-patch mutates the document by default. When setting the 
+        // flag to disallow mutations, it will simply clone the entire document
+        // instead. That causes all components that use objects from the state
+        // to re-render, which is highly undesireable.
+        // We can simply use immer's `produce` to avoid this problem.
+        const newDocument = produce(state.sharedState,
+            (state: any) => applyPatch(state, msg.patches).newDocument);
 
         this.dispatchNext(receiveState({
             receivedAt: Date.now(),
