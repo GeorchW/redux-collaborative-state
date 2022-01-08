@@ -8,4 +8,4 @@ const reducer = combineReducers({
     chat: chatReducer,
 });
 
-runServer({ reducer, selector: x => x });
+runServer({ reducer });
