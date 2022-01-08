@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { ClientIdentificationMessage } from "../../Messages.js";
 import Session from "./Session.js";
 import { SessionOptions } from "../ServerOptions.js";
+import ApplicationCloseCodes from "src/ApplicationCloseCodes.js";
 
 export default class SessionRegistry<TInternalState, TVisibleState> {
     #sessions = new Map<string, Session<TInternalState, TVisibleState>>();
@@ -24,7 +25,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
             for (const [sessionId, session] of this.#sessions) {
                 session.disconnectIdleClients();
                 if (now - (this.options.sessionTimeout ?? 60_000) > session.lastMessageTime) {
-                    console.log("Stopping session ", sessionId);
+                    console.log("Stopping session", sessionId);
                     session.close();
                     this.#sessions.delete(sessionId);
                 }
@@ -41,7 +42,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
         const initialMessage: ClientIdentificationMessage = await new Promise((resolve, reject) => {
             client.onmessage = msg => {
                 if (typeof msg.data !== "string") {
-                    client.close(4000, "unexpected message type");
+                    client.close(ApplicationCloseCodes.UNEXPECTED_MESSAGE_TYPE, "Unexpected message type.");
                     reject();
                     return;
                 }

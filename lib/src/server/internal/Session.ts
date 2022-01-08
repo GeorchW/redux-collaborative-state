@@ -6,6 +6,7 @@ import SessionClient from "./SessionClient.js";
 import { ClientInitializationMessage, ClientMessage } from "../../Messages.js";
 import { clientConnected, clientDisconnected } from "../serverActions.js";
 import { SessionOptions } from "../ServerOptions.js";
+import ApplicationCloseCodes from "src/ApplicationCloseCodes.js";
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;
@@ -24,7 +25,7 @@ export default class Session<TInternalState, TVisibleState> {
         for (const [clientId, client] of this.#clients) {
             if (client.lastMessageTime < minReactionTimestamp) {
                 console.log(`Disconnecting client ${clientId} since he does not seem to react.`)
-                client.webSocket.close(4000, "Client does not react");
+                client.webSocket.close(ApplicationCloseCodes.TIMEOUT, "Client does not react.");
             }
         }
     }
@@ -32,7 +33,7 @@ export default class Session<TInternalState, TVisibleState> {
     async addClient(webSocket: ws.WebSocket, clientId: string) {
         if (this.#clients.has(clientId)) {
             // TODO: check if client is dead?
-            this.#clients.get(clientId)!.webSocket.close(4000, "other client with same ID connected");
+            this.#clients.get(clientId)!.webSocket.close(ApplicationCloseCodes.CLIENT_CONNECTED_TWICE, "Another client with same ID connected.");
         }
         this.dispatch(clientConnected(clientId));
 
@@ -49,7 +50,7 @@ export default class Session<TInternalState, TVisibleState> {
             this.lastMessageTime = client.lastMessageTime = Date.now();
 
             if (typeof message.data !== "string") {
-                webSocket.close(4000, "invalid message type");
+                webSocket.close(ApplicationCloseCodes.UNEXPECTED_MESSAGE_TYPE, "Invalid message type.");
                 return;
             }
             const data = JSON.parse(message.data) as ClientMessage;
@@ -93,7 +94,7 @@ export default class Session<TInternalState, TVisibleState> {
 
     close() {
         for (const [, client] of this.#clients) {
-            client.webSocket.close(4000, "Terminating session");
+            client.webSocket.close(ApplicationCloseCodes.SESSION_TERMINATED, "Session terminated by the server.");
         }
     }
 }

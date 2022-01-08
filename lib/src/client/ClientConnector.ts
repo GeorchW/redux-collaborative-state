@@ -1,6 +1,7 @@
 import { AnyAction, Dispatch, Middleware } from "@reduxjs/toolkit";
 import { applyPatch } from "fast-json-patch";
 import produce from "immer"
+import WebSocketCloseCode from "src/WebSocketCloseCode";
 import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PatchesMessage, PingMessage, PongMessage, ServerMessage } from "../Messages";
 import { attemptConnection, connect, disconnect, receivePing, receiveState } from "./connectionSlice";
 
@@ -148,7 +149,7 @@ export default class ClientConnector<TState> {
             oldState.webSocket.onopen = x => x;
             oldState.webSocket.onmessage = x => x;
             oldState.webSocket.onclose = x => x;
-            oldState.webSocket.close(1000);
+            oldState.webSocket.close(WebSocketCloseCode.NORMAL_CLOSURE, "Disconnected by user request.");
         }
         if (newState.type !== "disconnected") {
             newState.webSocket.onopen = () => this.setState(this.onopen());
