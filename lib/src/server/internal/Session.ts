@@ -7,6 +7,7 @@ import { ClientInitializationMessage, ClientMessage } from "../../Messages.js";
 import { clientConnected, clientDisconnected } from "../serverActions.js";
 import { SessionOptions } from "../ServerOptions.js";
 import ApplicationCloseCodes from "../../ApplicationCloseCodes.js";
+import { ActionWithMetadata, messageMetadata } from "../metadata.js";
 
 export default class Session<TInternalState, TVisibleState> {
     #state: TInternalState;
@@ -55,9 +56,16 @@ export default class Session<TInternalState, TVisibleState> {
             }
             const data = JSON.parse(message.data) as ClientMessage;
             if (data.type === "action") {
+                const actionWithMetadata: ActionWithMetadata = {
+                    ...data.action,
+                    [messageMetadata]: {
+                        receivedAt: Date.now(),
+                        sender: clientId
+                    }
+                };
                 // Synchronous dispatches are not possible, since ws.send is a 
                 // synchronous operation that enqueues the message.
-                this.dispatch(data.action);
+                this.dispatch(actionWithMetadata);
             }
             else if (data.type === "ping") {
                 webSocket.send(JSON.stringify({ type: "pong" }));
