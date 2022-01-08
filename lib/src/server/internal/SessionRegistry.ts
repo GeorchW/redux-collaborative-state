@@ -12,7 +12,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
     #watchdogHandle: NodeJS.Timer | null = null;
 
     public constructor(
-        public readonly options: SessionOptions<TInternalState, TVisibleState>
+        public readonly options: Required<SessionOptions<TInternalState, TVisibleState>>
     ) {
     }
 
@@ -24,7 +24,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
             const now = Date.now();
             for (const [sessionId, session] of this.#sessions) {
                 session.disconnectIdleClients();
-                if (now - (this.options.sessionTimeout ?? 60_000) > session.lastMessageTime) {
+                if (now - (this.options.sessionTimeout) > session.lastMessageTime) {
                     console.log("Stopping session", sessionId);
                     session.close();
                     this.#sessions.delete(sessionId);
@@ -34,7 +34,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
                 clearInterval(this.#watchdogHandle);
                 this.#watchdogHandle = null;
             }
-        }, this.options.watchdogFrequency ?? 2000)
+        }, this.options.watchdogFrequency)
     }
 
     async connect(client: ws.WebSocket) {

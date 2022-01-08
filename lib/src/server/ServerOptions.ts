@@ -3,7 +3,7 @@ import { Express } from "express";
 
 export type Selector<TInternalState, TVisibleState> = (state: TInternalState, client: string) => TVisibleState;
 
-export default interface ServerOptions<TInternalState, TVisibleState> extends SessionOptions<TInternalState, TVisibleState> {
+export default interface ServerOptions<TInternalState, TVisibleState = TInternalState> extends SessionOptions<TInternalState, TVisibleState> {
     /**
      * The port on which the server should listen on. Defaults to 3001.
      */
@@ -24,7 +24,7 @@ export default interface ServerOptions<TInternalState, TVisibleState> extends Se
     websocketPath?: string;
 }
 
-export interface SessionOptions<TInternalState, TVisibleState> {
+export interface SessionOptions<TInternalState, TVisibleState = TInternalState> {
     /**
      * The reducer that should be used to handle actions on the server.
      */
@@ -32,7 +32,7 @@ export interface SessionOptions<TInternalState, TVisibleState> {
     /**
      * The function that translates the internal server state to the state presented to each client.
      */
-    selector: Selector<TInternalState, TVisibleState>;
+    selector?: Selector<TInternalState, TVisibleState>;
     /**
      * The minimum time after which sessions without participants are terminated, in milliseconds.
      * Defaults to 60000 (one minute).
@@ -48,4 +48,15 @@ export interface SessionOptions<TInternalState, TVisibleState> {
      * Defaults to 2000 (two seconds).
      */
     watchdogFrequency?: number;
+}
+
+export const defaultOptions: Required<Omit<ServerOptions<any>, "reducer">> = {
+    clientTimeout: 5000,
+    configureServer: () => { },
+    port: 3001,
+    selector: x => x,
+    serveBuild: true,
+    sessionTimeout: 60_000,
+    watchdogFrequency: 2000,
+    websocketPath: "/websocket"
 }

@@ -3,14 +3,16 @@ import http from "http";
 import ws from "ws";
 import { resolve } from "path";
 import SessionRegistry from "./internal/SessionRegistry.js";
-import ServerOptions from "./ServerOptions.js";
+import ServerOptions, { defaultOptions } from "./ServerOptions.js";
 
 /** Starts a new collaborative state server. */
 export default function runServer<TInternalState, TVisibleState>(
     options: ServerOptions<TInternalState, TVisibleState>
 ) {
+    const _options = { ...defaultOptions, ...options }
+
     const app = express();
-    const registry = new SessionRegistry(options);
+    const registry = new SessionRegistry(_options);
 
     if (process.env.NODE_ENV === "development") {
         // Configure CORS for local development
@@ -21,7 +23,7 @@ export default function runServer<TInternalState, TVisibleState>(
         });
     }
 
-    if (options.serveBuild ?? true) {
+    if (_options.serveBuild) {
         app.use("/", express.static("build"));
         app.get('*', (req, res) => {
             res.sendFile(resolve("build/index.html"));
@@ -30,7 +32,7 @@ export default function runServer<TInternalState, TVisibleState>(
 
     const server = http.createServer(app);
 
-    const wsServer = new ws.Server({ server, path: options.websocketPath ?? "/websocket" }, () => {
+    const wsServer = new ws.Server({ server, path: _options.websocketPath }, () => {
         console.log("Websocket server started.");
     })
 
@@ -39,10 +41,9 @@ export default function runServer<TInternalState, TVisibleState>(
         registry.connect(socket);
     })
 
-    const port = options.port ?? 3001;
-    server.listen(port, () => {
+    server.listen(_options.port, () => {
         console.log("Server started.");
-        console.log(`Port:     ${port}`);
+        console.log(`Port:     ${_options.port}`);
         console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
     });
 }

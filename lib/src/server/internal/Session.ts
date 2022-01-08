@@ -15,13 +15,13 @@ export default class Session<TInternalState, TVisibleState> {
 
     constructor(
         public readonly sessionId: string,
-        public readonly options: SessionOptions<TInternalState, TVisibleState>,
+        public readonly options: Required<SessionOptions<TInternalState, TVisibleState>>,
     ) {
         this.#state = options.reducer(undefined, { type: "@@SERVER_INIT" });
     }
 
     disconnectIdleClients() {
-        const minReactionTimestamp = Date.now() - (this.options.clientTimeout ?? 5_000);
+        const minReactionTimestamp = Date.now() - (this.options.clientTimeout);
         for (const [clientId, client] of this.#clients) {
             if (client.lastMessageTime < minReactionTimestamp) {
                 console.log(`Disconnecting client ${clientId} since he does not seem to react.`)
