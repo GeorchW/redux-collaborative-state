@@ -73,7 +73,7 @@ export default class SessionRegistry<TInternalState, TVisibleState> {
 
     createSession(sessionId: string): Session<TInternalState, TVisibleState> {
         if (this.#sessions.has(sessionId))
-            throw new Error("Session already exists");
+            throw new Error(`A session with the ID ${sessionId} already exists`);
 
         if (this.#watchdogHandle === null) {
             this.activateWatchdog();

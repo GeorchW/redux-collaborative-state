@@ -166,7 +166,7 @@ export default class ClientConnector<TState> {
     }
     private onmessage(e: MessageEvent): ConnectionActualState {
         if (typeof e.data !== "string")
-            throw new Error("Invalid message");
+            throw new Error("Invalid message type");
         const parsed = JSON.parse(e.data);
         if (this.#state.type === "socketOpen") {
             return this.handleClientInitialization(this.#state, parsed);
