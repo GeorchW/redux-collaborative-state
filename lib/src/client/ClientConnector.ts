@@ -1,7 +1,7 @@
 import { AnyAction, Dispatch, Middleware } from "@reduxjs/toolkit";
 import { applyPatch } from "fast-json-patch";
 import produce from "immer"
-import WebSocketCloseCode from "src/WebSocketCloseCode";
+import WebSocketCloseCode from "../WebSocketCloseCode";
 import { ActionMessage, ClientIdentificationMessage, ClientInitializationMessage, PatchesMessage, PingMessage, PongMessage, ServerMessage } from "../Messages";
 import { attemptConnection, connect, disconnect, receivePing, receiveState } from "./connectionSlice";
 
