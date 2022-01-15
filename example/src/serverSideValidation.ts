@@ -1,17 +1,20 @@
 import { AnyAction, CaseReducer, CaseReducerWithPrepare, PayloadAction, Reducer, Slice, SliceCaseReducers } from "@reduxjs/toolkit";
 import { todoSlice } from "./features/todo/todoSlice";
 import { chatSlice } from "./features/chat/chatSlice";
-import Joi from "joi";
+import { string, number, object, ref, isSchema, ArraySchema, StrictSchemaMap, StringSchema, NumberSchema, BooleanSchema, AnySchema, Schema } from "joi";
 import { getMetadata } from "redux-collaborative-state/dist/server/metadata";
 
 type PayloadValidator<T> =
-    T extends [] ? Joi.ArraySchema :
-    T extends object ? Joi.StrictSchemaMap<T> :
-    Joi.AnySchema;
+    T extends [] ? ArraySchema :
+    T extends object ? StrictSchemaMap<T> :
+    T extends string ? StringSchema :
+    T extends number ? NumberSchema :
+    T extends boolean ? BooleanSchema :
+    AnySchema;
 
-const joiSender = Joi.string().valid(Joi.ref("$sender"));
-const joiRecentTimestamp = (pastTimeout = 3000, futureTimeout = 500) =>
-    Joi.number().custom(x => Date.now() - pastTimeout < x && Date.now() + futureTimeout > x)
+const sender = string().valid(ref("$sender"));
+const recentTimestamp = (pastTimeout = 3000, futureTimeout = 500) =>
+    number().custom(x => Date.now() - pastTimeout < x && Date.now() + futureTimeout > x)
 
 type CaseVerifier<State, CaseReducers extends SliceCaseReducers<State>> = {
     [name in keyof CaseReducers]:
@@ -23,15 +26,15 @@ type CaseVerifier<State, CaseReducers extends SliceCaseReducers<State>> = {
 function createSliceVerifiers<State, CaseReducers extends SliceCaseReducers<State>>(
     slice: Slice<State, CaseReducers>,
     verifiers: CaseVerifier<State, CaseReducers>
-): { [key: string]: Joi.Schema } {
+): { [key: string]: Schema } {
     const caseVerifiers = Object.entries(verifiers).map(([key, value]) => {
         if (typeof value !== "object")
             throw new Error(`Invalid value provided as verifier: ${value}`);
 
         const actionName = `${slice.name}/${key}`;
-        const payloadVerifier = Joi.isSchema(value) ? value : Joi.object(value);
+        const payloadVerifier = isSchema(value) ? value : object(value);
 
-        const actionVerifier = Joi.object({
+        const actionVerifier = object({
             type: actionName,
             payload: payloadVerifier,
         })
@@ -43,16 +46,16 @@ function createSliceVerifiers<State, CaseReducers extends SliceCaseReducers<Stat
 
 const chatVerifiers = createSliceVerifiers(chatSlice, {
     writeMessage: {
-        author: joiSender,
-        message: Joi.string(),
-        timestamp: joiRecentTimestamp(),
+        author: sender,
+        message: string(),
+        timestamp: recentTimestamp(),
     }
 });
 
 const todoVerifiers = createSliceVerifiers(todoSlice, {
-    add: Joi.string(),
+    add: string(),
     remove: {
-        index: Joi.number(),
+        index: number(),
     },
 });
 
