@@ -2,7 +2,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 import { todoReducer } from "./features/todo/todoSlice";
 import { runServer } from "redux-collaborative-state/dist/server";
 import { chatReducer } from "./features/chat/chatSlice";
-import { verifyingReducer } from "./serverSideValidation";
+import { validatingReducer } from "./serverSideValidation";
 
 const reducer = combineReducers({
     todo: todoReducer,
@@ -10,4 +10,4 @@ const reducer = combineReducers({
 });
 
 
-runServer({ reducer: verifyingReducer(reducer) });
+runServer({ reducer: validatingReducer(reducer) });
