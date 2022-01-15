@@ -9,21 +9,24 @@
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always"
-            }
+            },
+            "isBackground": true
         },
         {
             "label": "Start example client (watch)",
             "type": "shell",
             "command": "yarn start",
             "problemMatcher": [],
-            "options": {"cwd": "./example"}
+            "options": {"cwd": "./example"},
+            "isBackground": true
         },
         {
             "label": "Start example server (watch)",
             "type": "shell",
             "command": "yarn start-server",
             "problemMatcher": [],
-            "options": {"cwd": "./example"}
+            "options": {"cwd": "./example"},
+            "isBackground": true
         }
     ]
 }
