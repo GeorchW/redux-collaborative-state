@@ -1,26 +1,26 @@
 import { Reducer } from "@reduxjs/toolkit";
 import { todoSlice } from "./features/todo/todoSlice";
 import { chatSlice } from "./features/chat/chatSlice";
-import { string, number, ref } from "joi";
+import Joi from "joi";
 import buildValidator from "redux-collaborative-state/dist/server/validation";
 
 
-const sender = () => string().valid(ref("$sender"));
+const sender = () => Joi.string().valid(Joi.ref("$sender"));
 const recentTimestamp = (pastTimeout = 3000, futureTimeout = 500) =>
-    number().custom(x => Date.now() - pastTimeout < x && Date.now() + futureTimeout > x)
+    Joi.number().custom(x => Date.now() - pastTimeout < x && Date.now() + futureTimeout > x)
 
 export const validatingReducer = <T>(reducer: Reducer<T>): Reducer<T> => buildValidator()
     .addSlice(chatSlice, {
         writeMessage: {
             author: sender(),
-            message: string(),
+            message: Joi.string(),
             timestamp: recentTimestamp(),
         }
     })
     .addSlice(todoSlice, {
-        add: string(),
+        add: Joi.string(),
         remove: {
-            index: number(),
+            index: Joi.number(),
         },
     })
     .getValidatingReducer(reducer);

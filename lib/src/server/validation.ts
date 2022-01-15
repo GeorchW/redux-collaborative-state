@@ -1,6 +1,6 @@
 
 import { ActionCreator, AnyAction, CaseReducer, CaseReducerWithPrepare, PayloadAction, PayloadActionCreator, Reducer, Slice, SliceCaseReducers } from "@reduxjs/toolkit";
-import { object, isSchema, ArraySchema, StrictSchemaMap, StringSchema, NumberSchema, BooleanSchema, AnySchema, Schema, State } from "joi";
+import Joi, { ArraySchema, StrictSchemaMap, StringSchema, NumberSchema, BooleanSchema, AnySchema, Schema } from "joi";
 import { getMetadata } from "./metadata";
 export type PayloadValidator<T> =
     T extends [] ? ArraySchema :
@@ -25,9 +25,9 @@ export function createActionValidator<Payload>(action: PayloadActionCreator<Payl
     if (typeof validator !== "object")
         throw new Error(`Invalid value provided as validator: ${validator}`);
 
-    const payloadValidator = isSchema(validator) ? validator : object(validator as any);
+    const payloadValidator = Joi.isSchema(validator) ? validator : Joi.object(validator as any);
 
-    return object({
+    return Joi.object({
         type: action.name,
         payload: payloadValidator,
     })
@@ -42,9 +42,9 @@ export function createSliceValidator<State, CaseReducers extends SliceCaseReduce
             throw new Error(`Invalid value provided as validator: ${value}`);
 
         const actionName = `${slice.name}/${key}`;
-        const payloadValidator = isSchema(value) ? value : object(value);
+        const payloadValidator = Joi.isSchema(value) ? value : Joi.object(value);
 
-        const actionValidator = object({
+        const actionValidator = Joi.object({
             type: actionName,
             payload: payloadValidator,
         })
