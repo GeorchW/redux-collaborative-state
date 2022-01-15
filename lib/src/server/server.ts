@@ -32,7 +32,7 @@ export default function runServer<TInternalState, TVisibleState>(
 
     const server = http.createServer(app);
 
-    const wsServer = new ws.Server({ server, path: _options.websocketPath }, () => {
+    const wsServer = new ws.Server({ server, path: _options.websocketPath, maxPayload: _options.maxPayload }, () => {
         console.log("Websocket server started.");
     })
 

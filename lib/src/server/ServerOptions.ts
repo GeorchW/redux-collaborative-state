@@ -22,6 +22,11 @@ export default interface ServerOptions<TInternalState, TVisibleState = TInternal
      * The path that the websockt server should listen on. Defaults to "/websocket".
      */
     websocketPath?: string;
+    /**
+     * The maximum accepted payload size to be sent by the client, in bytes.
+     * Defaults to 8 MiByte (`8 * 2**20`).
+     */
+    maxPayload?: number,
 }
 
 export interface SessionOptions<TInternalState, TVisibleState = TInternalState> {
@@ -58,5 +63,6 @@ export const defaultOptions: Required<Omit<ServerOptions<any>, "reducer">> = {
     serveBuild: true,
     sessionTimeout: 60_000,
     watchdogFrequency: 2000,
-    websocketPath: "/websocket"
+    websocketPath: "/websocket",
+    maxPayload: 8 * 2 ** 20,
 }
