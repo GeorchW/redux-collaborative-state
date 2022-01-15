@@ -1,49 +1,71 @@
-import { AnyAction, PayloadActionCreator, Reducer } from "@reduxjs/toolkit";
-import { add } from "./features/todo/todoSlice";
-import { writeMessage } from "./features/chat/chatSlice";
+import { AnyAction, CaseReducer, CaseReducerWithPrepare, PayloadAction, Reducer, Slice, SliceCaseReducers } from "@reduxjs/toolkit";
+import { todoSlice } from "./features/todo/todoSlice";
+import { chatSlice } from "./features/chat/chatSlice";
 import Joi from "joi";
 import { getMetadata } from "redux-collaborative-state/dist/server/metadata";
 
-const validatedAction = Symbol("validatedAction");
+type PayloadValidator<T> =
+    T extends [] ? Joi.ArraySchema :
+    T extends object ? Joi.StrictSchemaMap<T> :
+    Joi.AnySchema;
 
-type PayloadValidator<T> = {
-    [key in keyof T]: ReturnType<typeof Joi.any>
-}
-
-function joiPayloadAction<T>(action: PayloadActionCreator<T>, payloadValidator: PayloadValidator<T>) {
-    const result = Joi.object({
-        type: action.type,
-        payload: Joi.object(payloadValidator)
-    });
-    (result as any)[validatedAction] = action;
-    return result;
-}
-
-const joiSender = Joi.valid(Joi.ref("$sender"));
+const joiSender = Joi.string().valid(Joi.ref("$sender"));
 const joiRecentTimestamp = (pastTimeout = 3000, futureTimeout = 500) =>
     Joi.number().custom(x => Date.now() - pastTimeout < x && Date.now() + futureTimeout > x)
 
-const actionValidators = [
-    joiPayloadAction(writeMessage, {
+type CaseVerifier<State, CaseReducers extends SliceCaseReducers<State>> = {
+    [name in keyof CaseReducers]:
+    CaseReducers[name] extends CaseReducer<State, PayloadAction<infer Payload>> | undefined ? PayloadValidator<Payload> :
+    CaseReducers[name] extends CaseReducerWithPrepare<State, infer Payload> | undefined ? PayloadValidator<Payload> :
+    never
+};
+
+function createSliceVerifiers<State, CaseReducers extends SliceCaseReducers<State>>(
+    slice: Slice<State, CaseReducers>,
+    verifiers: CaseVerifier<State, CaseReducers>
+): { [key: string]: Joi.Schema } {
+    const caseVerifiers = Object.entries(verifiers).map(([key, value]) => {
+        if (typeof value !== "object")
+            throw new Error(`Invalid value provided as verifier: ${value}`);
+
+        const actionName = `${slice.name}/${key}`;
+        const payloadVerifier = Joi.isSchema(value) ? value : Joi.object(value);
+
+        const actionVerifier = Joi.object({
+            type: actionName,
+            payload: payloadVerifier,
+        })
+
+        return [actionName, actionVerifier];
+    });
+    return Object.fromEntries(caseVerifiers);
+}
+
+const chatVerifiers = createSliceVerifiers(chatSlice, {
+    writeMessage: {
         author: joiSender,
         message: Joi.string(),
-        timestamp: joiRecentTimestamp()
-    }),
-    joiPayloadAction(add, {
-        participant: joiSender,
-        text: Joi.string(),
-    })
-]
+        timestamp: joiRecentTimestamp(),
+    }
+});
 
-const actionValidatorMap = Object.fromEntries(
-    actionValidators.map(x => [(x as any)[validatedAction].type, x] as [string, ReturnType<typeof Joi.any>])
-);
+const todoVerifiers = createSliceVerifiers(todoSlice, {
+    add: Joi.string(),
+    remove: {
+        index: Joi.number(),
+    },
+});
+
+const allVerifiers = {
+    ...chatVerifiers,
+    ...todoVerifiers,
+}
 
 const verify = (action: AnyAction): boolean => {
     const metadata = getMetadata(action);
     if (metadata === undefined) return true; // Internal messages are always valid.
 
-    const validator = actionValidatorMap[action.type];
+    const validator = allVerifiers[action.type];
     if (validator === undefined) {
         console.log("Received unverifiable action: ", action.type);
         return false;

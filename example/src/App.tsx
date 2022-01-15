@@ -47,10 +47,7 @@ function AddItemComponent() {
   const dispatch = useAppDispatch();
   const submit = () => {
     if (!clientId) return;
-    dispatch(add({
-      participant: clientId,
-      text
-    }));
+    dispatch(add(text));
     setText("");
   };
 
