@@ -18,6 +18,14 @@ export const chatSlice = createSlice({
     reducers: {
         writeMessage(state, action: PayloadAction<Message>) {
             state.messages.push(action.payload);
+        },
+        writeExpensiveMessage(state, action: PayloadAction<Message>) {
+            // simulate some heavy computations
+            const timeout = 200;
+            const before = Date.now();
+            while (Date.now() - before < timeout);
+
+            state.messages.push(action.payload);
         }
     },
     extraReducers: builder => builder
@@ -29,5 +37,5 @@ export const chatSlice = createSlice({
         })
 })
 
-export const { writeMessage } = chatSlice.actions;
+export const { writeMessage, writeExpensiveMessage } = chatSlice.actions;
 export const chatReducer = chatSlice.reducer;

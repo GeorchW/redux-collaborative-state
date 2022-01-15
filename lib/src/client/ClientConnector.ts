@@ -31,6 +31,7 @@ interface ConnectedState {
     sharedState: any,
     pingIntervalHandle: NodeJS.Timer,
     lastPingSent: number,
+    serverTimeOffset: number,
 }
 
 /**
@@ -111,7 +112,7 @@ export default class ClientConnector<TState> {
     /** Sends a Redux action to the server. */
     public sendAction(action: AnyAction) {
         if (this.#state.type === "connected")
-            _send(this.#state.webSocket, { type: "action", action });
+            _send(this.#state.webSocket, { type: "action", action, sentAt: Date.now() + this.#state.serverTimeOffset });
         else console.error("Not connected - can't send any actions");
     }
 
@@ -207,7 +208,8 @@ export default class ClientConnector<TState> {
             sessionId, clientId, pingIntervalHandle,
             sharedState: initialState,
             webSocket: state.webSocket,
-            lastPingSent: Date.now()
+            lastPingSent: Date.now(),
+            serverTimeOffset: 0,
         }
     }
     private handlePatchesMessage(state: ConnectedState, msg: PatchesMessage): ConnectedState {
@@ -229,13 +231,14 @@ export default class ClientConnector<TState> {
         }
     }
     private handlePongMessage(state: ConnectedState, msg: PongMessage): ConnectedState {
-        const receivedAt = Date.now();
-        const pingTime = receivedAt - state.lastPingSent;
+        const now = Date.now();
+        const roundTripTime = now - state.lastPingSent;
+        const serverTimeOffset = msg.currentServerTime - now + roundTripTime;
         this.dispatchNext(receivePing({
-            receivedAt,
-            pingTime,
+            receivedAt: now,
+            pingTime: roundTripTime,
         }));
-        return { ...state }
+        return { ...state, serverTimeOffset }
     }
     private async onclose(e: CloseEvent): Promise<ConnectionActualState> {
         // In Firefox, refreshing a page with an open WebSocket connection will

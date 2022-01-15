@@ -15,6 +15,11 @@ export const validatingReducer = <T>(reducer: Reducer<T>): Reducer<T> => buildVa
             author: sender(),
             message: Joi.string(),
             timestamp: recentTimestamp(),
+        },
+        writeExpensiveMessage: {
+            author: sender(),
+            message: Joi.string(),
+            timestamp: recentTimestamp(),
         }
     })
     .addSlice(todoSlice, {

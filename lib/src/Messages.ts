@@ -21,7 +21,9 @@ export interface PatchesMessage {
 
 export interface ActionMessage {
     type: "action",
-    action: AnyAction
+    action: AnyAction,
+    /** Timestamp at which this message was sent. */
+    sentAt: number,
 }
 
 export interface PingMessage {
@@ -29,6 +31,8 @@ export interface PingMessage {
 }
 export interface PongMessage {
     type: "pong",
+    /** The current wall clock time of the server. */
+    currentServerTime: number,
 }
 
 export type ClientMessage = PingMessage | ActionMessage;

@@ -3,7 +3,7 @@ import { AnyAction, Reducer } from "@reduxjs/toolkit";
 import { compare } from "fast-json-patch";
 import ws from "ws";
 import SessionClient from "./SessionClient.js";
-import { ClientInitializationMessage, ClientMessage } from "../../Messages.js";
+import { ActionMessage, ClientInitializationMessage, ClientMessage } from "../../Messages.js";
 import { clientConnected, clientDisconnected } from "../serverActions.js";
 import { SessionOptions } from "../ServerOptions.js";
 import ApplicationCloseCodes from "../../ApplicationCloseCodes.js";
@@ -48,7 +48,8 @@ export default class Session<TInternalState, TVisibleState> {
 
 
         webSocket.onmessage = message => {
-            this.lastMessageTime = client.lastMessageTime = Date.now();
+            const now = Date.now();
+            this.lastMessageTime = client.lastMessageTime = now;
 
             if (typeof message.data !== "string") {
                 webSocket.close(ApplicationCloseCodes.UNEXPECTED_MESSAGE_TYPE, "Invalid message type.");
@@ -56,10 +57,16 @@ export default class Session<TInternalState, TVisibleState> {
             }
             const data = JSON.parse(message.data) as ClientMessage;
             if (data.type === "action") {
+                const validationResult = this.validateActionMessage(data, now);
+                if (validationResult !== true) {
+                    console.error(`Not processing action of type ${data?.action?.type ?? "<undefined>"}: ${validationResult}`);
+                    return;
+                }
+
                 const actionWithMetadata: ActionWithMetadata = {
                     ...data.action,
                     [messageMetadata]: {
-                        receivedAt: Date.now(),
+                        receivedAt: now,
                         sender: clientId
                     }
                 };
@@ -68,7 +75,7 @@ export default class Session<TInternalState, TVisibleState> {
                 this.dispatch(actionWithMetadata);
             }
             else if (data.type === "ping") {
-                webSocket.send(JSON.stringify({ type: "pong" }));
+                webSocket.send(JSON.stringify({ type: "pong", currentServerTime: now }));
             }
         };
         webSocket.onclose = message => {
@@ -79,6 +86,31 @@ export default class Session<TInternalState, TVisibleState> {
 
         const client = new SessionClient(clientId, webSocket, initialState);
         this.#clients.set(clientId, client);
+    }
+
+    validateActionMessage(message: ActionMessage, now: number): true | string {
+        // Perform a basic typecheck of the message
+        if (typeof message.sentAt !== "number") {
+            return "Missing sentAt field";
+        }
+        if (typeof message.action !== "object") {
+            return "Missing action field";
+        }
+        if (typeof message.action.type !== "string") {
+            return "Missing action type field";
+        }
+
+        const messageAge = now - message.sentAt;
+
+        // Discard messages that are too old.
+        if (messageAge >= this.options.maxMessageAge) {
+            return `Message too old (age: ${messageAge} ms, now: ${now}, sent at: ${message.sentAt})`;
+        }
+        // Discard messages from the future.
+        if (messageAge <= this.options.minMessageAge) {
+            return `Message too young (age: ${messageAge} ms, now: ${now}, sent at: ${message.sentAt})`;
+        }
+        return true;
     }
 
     dispatch(action: AnyAction) {

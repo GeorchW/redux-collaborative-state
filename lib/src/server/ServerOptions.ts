@@ -53,6 +53,17 @@ export interface SessionOptions<TInternalState, TVisibleState = TInternalState> 
      * Defaults to 2000 (two seconds).
      */
     watchdogFrequency?: number;
+    /**
+     * The maximum age for an action message after which it will be discarded, in milliseconds.
+     * Defaults to 1000 (one second).
+     */
+    maxMessageAge?: number;
+    /**
+     * The minimum age for a message before which it will be discarded, in milliseconds.
+     * (Messages are discarded if they come from the future.)
+     * Defaults to -200 (-0.2 seconds).
+     */
+    minMessageAge?: number;
 }
 
 export const defaultOptions: Required<Omit<ServerOptions<any>, "reducer">> = {
@@ -65,4 +76,6 @@ export const defaultOptions: Required<Omit<ServerOptions<any>, "reducer">> = {
     watchdogFrequency: 2000,
     websocketPath: "/websocket",
     maxPayload: 8 * 2 ** 20,
+    maxMessageAge: 1000,
+    minMessageAge: -200,
 }

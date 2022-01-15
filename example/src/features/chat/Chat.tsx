@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from "../../app/hooks"
-import { Message, writeMessage } from "./chatSlice";
+import { Message, writeExpensiveMessage, writeMessage } from "./chatSlice";
 import "./Chat.css"
 import React from "react";
 
@@ -54,5 +54,14 @@ function ChatInput() {
             }))
             e.currentTarget.value = "";
         }} />
+        <button onClick={() => {
+            for (let i = 0; i < 100; i++) {
+                dispatch(writeExpensiveMessage({
+                    author: author!,
+                    message: `${i}: This is a very expensive message`,
+                    timestamp: Date.now()
+                }))
+            }
+        }}>Spam 100 expensive messages</button>
     </div>
 }
