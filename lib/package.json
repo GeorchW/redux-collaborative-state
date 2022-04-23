@@ -1,6 +1,6 @@
 {
   "name": "redux-collaborative-state",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "This is a library for creating collaborative web applications using Redux.",
   "author": "Georg Wicke-Arndt",
   "license": "MIT",
@@ -13,10 +13,10 @@
     "ws": "^8.4.0"
   },
   "devDependencies": {
-    "typescript": "^4.5.4",
     "@types/express": "^4.17.13",
     "@types/node": "^17.0.5",
-    "@types/ws": "^8.2.2"
+    "@types/ws": "^8.2.2",
+    "typescript": "^4.5.4"
   },
   "scripts": {
     "prepack": "tsc",
